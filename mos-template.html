@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOS WORD — TEST 1</title>
+<!-- ============================================================
+     mos-template.html  —  GIAO DIỆN + LOGIC
+     Không chứa data câu hỏi. Data nằm trong mos-data.js
+     
+     CẤU TRÚC THƯ MỤC:
+     mos-word-test1/
+     ├── mos-template.html   ← file này
+     ├── mos-data.js         ← toàn bộ câu hỏi 7 project
+     └── images/             ← ảnh minh họa
+     
+     THÔNG TIN PHIÊN LÀM BÀI (nhận từ trang chủ IC3):
+     URL params: ?account=ten_hoc_sinh&token=abc123
+     Nếu không có → hiện form nhập tên (chế độ test offline)
+============================================================ -->
+<style>
+body{ font-family:Arial; background:#eef4f9; padding:10px; box-sizing:border-box; }
+
+.top-header,.question-title,.timeout-banner,.step1-box,
+.col-header-bar,.simulator-wrapper,.coord-box,.step-popup{
+    width:100%; max-width:1200px; margin-left:auto; margin-right:auto; box-sizing:border-box;
+}
+.top-header{ margin-top:10px; display:flex; align-items:center; gap:12px; }
+.home-btn{ background:red; color:#fff; border:none; padding:12px 18px; border-radius:10px; cursor:pointer; font-weight:bold; white-space:nowrap; }
+.home-btn:hover{ background:#b91c1c; }
+.dropdown-wrap{ flex:1; }
+.multi-dropdown{ display:flex; gap:12px; }
+#projectSelect{ width:120px; flex:none; }
+#questionSelect{ flex:1; }
+.question-select{ width:100%; padding:12px; border-radius:10px; border:2px solid #cbd5e1; font-size:16px; font-weight:bold; background:#fff; }
+.select-locked{ background:#f1f5f9!important; color:#94a3b8!important; border-color:#e2e8f0!important; cursor:not-allowed!important; }
+#questionSelect.hidden-select{ visibility:hidden; pointer-events:none; opacity:0; }
+button{ padding:12px 18px; border:none; border-radius:10px; cursor:pointer; color:#fff; font-weight:bold; white-space:nowrap; }
+.start-btn{ background:#2563eb; min-width:160px; font-size:15px; transition:background 0.2s; }
+.start-btn:hover{ background:#1d4ed8; }
+.start-btn.running{ background:#16a34a; animation:pulse-green 1.5s infinite; }
+.start-btn.stopped{ background:#dc2626; }
+.start-btn.timeout{ background:#2563eb; animation:none; }
+@keyframes pulse-green{ 0%{background:#16a34a;} 50%{background:#15803d;box-shadow:0 0 8px rgba(22,163,74,0.5);} 100%{background:#16a34a;} }
+.btn-video{ background:#2563eb; }
+.btn-debug{ background:red; }
+.question-title{ margin-bottom:10px; text-align:left; font-size:20px; font-weight:bold; color:#1e3a5f; }
+.col-header-bar{ margin-bottom:6px; display:grid; grid-template-columns:65% 35%; gap:16px; }
+.step-title{ font-size:18px; color:#1e3a5f; font-weight:bold; padding:8px 12px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:8px; display:flex; align-items:center; margin:0; }
+.right-col-header{ font-size:16px; font-weight:bold; color:#64748b; padding:8px 12px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:8px; display:flex; align-items:center; justify-content:center; text-transform:uppercase; letter-spacing:0.5px; }
+.step1-box{ margin-bottom:10px; background:#ecfdf5; border:2px solid #dbeafe; border-radius:12px; padding:8px; display:flex; align-items:center; gap:16px; }
+.step1-title{ font-size:18px; font-weight:bold; color:#1e3a5f; white-space:nowrap; }
+.step1-select{ flex:1; padding:8px; border-radius:10px; border:2px solid #cbd5e1; font-size:18px; background:#fff; }
+.simulator-wrapper{ display:grid; grid-template-columns:65% 35%; gap:16px; align-items:stretch; }
+.simulator{ position:relative; border:2px solid #ccc; border-radius:10px; overflow:hidden; background:#fff; min-height:320px; }
+.simulator img{ max-width:100%; max-height:420px; height:auto; display:block; }
+.hotspot{ position:absolute; cursor:pointer; box-sizing:border-box; z-index:10; }
+.hotspot.debug{ border:2px dashed red; background:rgba(255,0,0,0.15); }
+.click-layer{ position:absolute; left:0; top:0; width:100%; height:100%; z-index:1; }
+.coord-box{ margin:12px auto; background:#111827; color:#fff; padding:12px; border-radius:8px; font-size:14px; display:none; line-height:1.7; }
+.step-popup{ margin:10px auto; text-align:center; padding:8px 18px; border-radius:10px; font-weight:bold; font-size:18px; display:none; }
+.hint-btn{ display:inline-block; margin-left:16px; padding:6px 16px; background:#f59e0b; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }
+.hint-btn:hover{ background:#d97706; }
+.hint-overlay{ position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:19999; display:flex; justify-content:center; align-items:center; }
+.hint-box{ background:#fff; border:3px solid #f59e0b; border-radius:14px; padding:20px 24px 18px; max-width:700px; width:90%; box-shadow:0 12px 40px rgba(0,0,0,0.35); position:relative; text-align:center; }
+.hint-box-title{ font-size:17px; font-weight:bold; color:#92400e; margin-bottom:12px; }
+.hint-box img{ max-width:100%; border-radius:8px; }
+.hint-close{ position:absolute; right:10px; top:8px; font-size:22px; cursor:pointer; color:#374151; }
+.hint-close:hover{ color:#dc2626; }
+.timeout-banner{ margin-bottom:10px; background:#fef2f2; border:2px solid #dc2626; border-radius:10px; padding:14px 18px; font-size:18px; font-weight:bold; color:#991b1b; text-align:center; display:none; }
+.result{ position:fixed; left:0; top:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.35); z-index:9999; pointer-events:none; }
+.result:empty{ display:none; }
+.result-box{ background:#ecfdf5; border:2px solid #16a34a; border-radius:12px; padding:24px 30px; min-width:min(500px,90vw); box-shadow:0 10px 30px rgba(0,0,0,0.25); pointer-events:auto; position:relative; max-height:80vh; overflow:auto; }
+.close-btn{ position:absolute; right:10px; top:8px; cursor:pointer; font-size:22px; color:#111; }
+.project-summary-box{ background:#fff3cd; border:3px solid #f59e0b; border-radius:14px; padding:28px 32px; min-width:min(560px,90vw); box-shadow:0 16px 50px rgba(0,0,0,0.35); pointer-events:auto; position:relative; max-height:85vh; overflow:auto; text-align:center; }
+.project-summary-box .close-btn{ display:none; }
+#resultPanel{ display:flex; flex-direction:column; gap:10px; }
+.result-step-box,.result-final-box{ flex:1; min-height:0; }
+.result-placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:140px; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; color:#94a3b8; font-size:13px; font-weight:bold; gap:8px; text-align:center; padding:14px; }
+.result-placeholder span{ font-size:28px; }
+.result-img-box{ border:2px solid #16a34a; border-radius:10px; overflow:hidden; background:#fff; }
+.result-step-box .result-img-box img,.result-final-box .result-img-box img{ width:100%; max-height:200px; height:auto; display:block; }
+.result-img-badge{ color:#fff; font-size:12px; font-weight:bold; padding:5px 12px; text-align:center; background:#2563eb; }
+
+/* Thanh thông tin tài khoản */
+.account-bar{ background:#1e3a5f; color:#fff; padding:6px 16px; font-size:14px; font-weight:bold; text-align:right; border-radius:8px; margin-bottom:8px; max-width:1200px; margin-left:auto; margin-right:auto; display:flex; justify-content:space-between; align-items:center; }
+.account-bar span{ color:#93c5fd; }
+
+/* Overlay nhập tên (chế độ test offline) */
+.login-overlay{ position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; display:flex; justify-content:center; align-items:center; }
+.login-box{ background:#fff; border-radius:14px; padding:32px 36px; min-width:340px; box-shadow:0 16px 50px rgba(0,0,0,0.4); text-align:center; }
+.login-box h2{ color:#1e3a5f; margin-bottom:20px; font-size:22px; }
+.login-box input{ width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; font-size:17px; margin-bottom:16px; box-sizing:border-box; }
+.login-box button{ background:#2563eb; color:#fff; border:none; padding:12px 28px; border-radius:10px; font-size:17px; font-weight:bold; cursor:pointer; width:100%; }
+.login-box button:hover{ background:#1d4ed8; }
+
+@media(max-width:767px){
+    body{ padding:10px; }
+    .step1-box{ flex-wrap:wrap; gap:10px; }
+    .start-btn{ min-width:120px; font-size:13px; }
+    .col-header-bar{ grid-template-columns:1fr; gap:6px; }
+    .right-col-header{ display:none; }
+    .simulator-wrapper{ grid-template-columns:1fr; gap:12px; }
+    #resultPanel{ flex-direction:row; gap:10px; }
+    .result-step-box,.result-final-box{ flex:1; }
+    .top-header{ flex-wrap:wrap; gap:8px; }
+}
+@media(max-width:479px){
+    .start-btn{ min-width:100px; font-size:12px; padding:8px 10px; }
+    .simulator{ min-height:200px; }
+    #resultPanel{ flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- THANH TÀI KHOẢN -->
+<div class="account-bar" id="accountBar">
+    <span>MOS WORD — TEST 1</span>
+    <span>Tài khoản: <span id="accountName">—</span></span>
+</div>
+
+<!-- OVERLAY NHẬP TÊN (chế độ offline/test) -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2>🖥️ MOS WORD — TEST 1</h2>
+        <p style="color:#64748b;margin-bottom:16px;">Nhập tên tài khoản để bắt đầu</p>
+        <input type="text" id="loginInput" placeholder="Họ tên hoặc mã học sinh..." maxlength="50">
+        <button onclick="doLogin()">▶ Bắt đầu làm bài</button>
+    </div>
+</div>
+
+<div class="timeout-banner" id="timeoutBanner">
+    ⏰ Đã hết 60 phút — Đồng hồ tạm dừng. Bạn vẫn có thể tiếp tục làm bài.
+</div>
+
+<div class="question-title" id="questionTitle"></div>
+
+<div class="step1-box">
+    <button class="start-btn" id="startBtn" onclick="handleStartBtn()">▶ Bắt đầu ⏱ 00:00</button>
+    <div class="step1-title">Bước 1.</div>
+    <select class="step1-select" id="step1Select" onchange="checkStep1()">
+        <option>*** Lựa chọn khác ***</option>
+        <option>1. Nháy chọn văn bản (đoạn/ trang văn bản) cần thực hiện.</option>
+        <option>2. Nháy chọn bảng/ hình ảnh cần định dạng.</option>
+        <option>3. Nháy chọn vị trí cần tạo Header (Footer/ Endnote/ Footnote).</option>
+        <option>4. Nháy chọn vị trí cần chèn hình ảnh/ tạo bảng.</option>
+        <option>5. Click phải chuột lên đối tượng cần thực hiện.</option>
+    </select>
+</div>
+
+<div class="col-header-bar">
+    <div class="step-title" id="stepTitle"></div>
+    <div class="right-col-header">* Minh họa kết quả *</div>
+</div>
+
+<div class="simulator-wrapper">
+    <div class="simulator" id="simulator0"></div>
+    <div id="resultPanel">
+        <div class="result-step-box">
+            <div class="result-placeholder" id="resultPlaceholder"><span>🖱️</span>Click đúng bên trái<br>để xem minh họa</div>
+            <div class="result-img-box" id="resultImgBox" style="display:none;">
+                <div class="result-img-badge" id="resultImgBadge"></div>
+                <img id="resultImg" src="" alt="Minh họa bước đúng">
+            </div>
+        </div>
+        <div class="result-final-box">
+            <div class="result-placeholder" id="finalPlaceholder"><span>🏁</span>Xuất hiện khi hoàn thành<br>bước cuối cùng</div>
+            <div class="result-img-box" id="finalImgBox" style="display:none;">
+                <div class="result-img-badge" id="finalImgBadge">🏁 Kết quả hoàn thành câu hỏi</div>
+                <img id="finalImg" src="" alt="Kết quả câu hỏi">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="step-popup" id="stepPopup"></div>
+<div class="coord-box" id="coordBox"></div>
+<div class="result" id="result"></div>
+
+<div class="top-header">
+    <button class="home-btn" onclick="goHome()">⬅ Home</button>
+    <select class="question-select" id="versionSelect" onchange="handleVersionChange(this.value)" style="width:120px;flex:none;">
+        <option value="" selected disabled>- Phiên bản -</option>
+        <option value="2016">Word 2016</option>
+        <option value="2019">Word 2019</option>
+        <option value="2021">Word 2021</option>
+        <option value="365">Word 365</option>
+    </select>
+    <div class="dropdown-wrap multi-dropdown">
+        <select class="question-select" id="projectSelect" onchange="handleProjectChange(this.value)">
+            <option value="" selected disabled>- Dự án -</option>
+            <option value="0">Project 1</option>
+            <option value="1">Project 2</option>
+            <option value="2">Project 3</option>
+            <option value="3">Project 4</option>
+            <option value="4">Project 5</option>
+            <option value="5">Project 6</option>
+            <option value="6">Project 7</option>
+            <!-- THÊM PROJECT MỚI: thêm <option value="7">Project 8</option> ở đây
+                 VÀ thêm mảng tương ứng vào DATA_2016 trong mos-data.js -->
+        </select>
+        <select class="question-select hidden-select" id="questionSelect" onchange="handleQuestionChange(this.value)"></select>
+    </div>
+    <button class="btn-video" onclick="openVideo()">🎬 Minh họa project</button>
+    <button class="btn-debug" onclick="toggleDebug()">🧭 Khung tọa độ</button>
+</div>
+
+<!-- Load data từ file riêng -->
+<script src="mos-data.js"></script>
+
+<script>
+/* ============================================================
+   THÔNG TIN PHIÊN LÀM BÀI
+   Nhận từ URL params (khi liên kết từ IC3) hoặc nhập thủ công
+============================================================ */
+const TEST_ID   = 'MOS-WORD-TEST1';  // ID bài thi (cố định)
+let   ACCOUNT   = '';                 // Tên/mã học sinh
+
+/* Đọc URL params: ?account=xxx&token=yyy */
+(function(){
+    const p = new URLSearchParams(window.location.search);
+    if(p.get('account')){
+        ACCOUNT = decodeURIComponent(p.get('account'));
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('accountName').textContent = ACCOUNT;
+    }
+    /* token sẽ dùng để xác thực với IC3 server sau */
+})();
+
+function doLogin(){
+    const val = document.getElementById('loginInput').value.trim();
+    if(!val){ alert('Vui lòng nhập tên hoặc mã học sinh!'); return; }
+    ACCOUNT = val;
+    document.getElementById('accountName').textContent = ACCOUNT;
+    document.getElementById('loginOverlay').style.display = 'none';
+}
+document.getElementById('loginInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doLogin();
+});
+
+/* ============================================================
+   LƯU ĐIỂM — GỬI LÊN GOOGLE SHEETS (tạm thời)
+   Khi có server thật: đổi SHEET_URL thành API endpoint
+============================================================ */
+const SHEET_URL = ''; /* DÁN URL Google Apps Script vào đây khi có */
+
+/*
+   CỘT CSV: Ngày | Tài khoản | Phiên bản | Project | Câu | Nội dung câu
+            | B1 | B2 | B3 | B4 | B5 | B6 | Điểm | % | Thời gian
+*/
+function saveScore(data){
+    if(!SHEET_URL){ console.log('[SCORE - chưa có server]', data); return; }
+    fetch(SHEET_URL, {
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+    }).catch(function(e){ console.warn('Lưu điểm thất bại:', e); });
+}
+
+function buildScorePayload(q, questionScore, maxScore, percent){
+    const now   = new Date();
+    const ngay  = now.toLocaleDateString('vi-VN');
+    const steps = q.steps;
+    /* B1..B6: 1=đúng, 0=sai, '-'=không có bước */
+    const b = [
+        step1WrongCount===0 ? 1 : 0,
+        steps[0] ? ((wrongCount[0]||0)===0 ? 1 : 0) : '-',
+        steps[1] ? ((wrongCount[1]||0)===0 ? 1 : 0) : '-',
+        steps[2] ? ((wrongCount[2]||0)===0 ? 1 : 0) : '-',
+        steps[3] ? ((wrongCount[3]||0)===0 ? 1 : 0) : '-',
+        steps[4] ? ((wrongCount[4]||0)===0 ? 1 : 0) : '-'
+    ];
+    return {
+        test_id:    TEST_ID,
+        ngay:       ngay,
+        tai_khoan:  ACCOUNT,
+        phien_ban:  currentVersion,
+        project:    'Project ' + (currentProjectIndex+1),
+        cau:        'Câu ' + (currentQuestion+1),
+        noi_dung:   q.title.replace(/<[^>]+>/g,''),
+        b1: b[0], b2: b[1], b3: b[2], b4: b[3], b5: b[4], b6: b[5],
+        diem:       questionScore,
+        diem_max:   maxScore,
+        phan_tram:  percent,
+        thoi_gian:  formatTime(timerSeconds)
+    };
+}
+
+/* ============================================================
+   STATE
+============================================================ */
+let PROJECTS          = [];
+let currentVersion    = '';
+let currentProject    = 0;
+let currentQuestion   = 0;
+let currentStep       = 0;
+let debugMode         = false;
+let wrongCount        = [];
+let step1WrongCount   = 0;
+let step1Completed    = false;
+let totalProjectScore = 0;
+let totalProjectMax   = 0;
+let highestUnlocked   = 0;
+
+/* Khóa phiên bản & dự án */
+let versionLocked       = false;
+let projectLocked       = false;
+let completedProjects   = new Set();
+let currentProjectIndex = -1;
+
+/* ============================================================
+   TIMER
+============================================================ */
+const TIMER_LIMIT_SEC = 60*60;
+let timerSeconds=0, timerInterval=null, timerRunning=false;
+let timerStarted=false, timerTimedOut=false, timerFinished=false;
+
+function formatTime(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; return h>0?pad(h)+':'+pad(m)+':'+pad(sc):pad(m)+':'+pad(sc); }
+function pad(n){ return n<10?'0'+n:''+n; }
+function updateStartBtn(){
+    const b=document.getElementById('startBtn');
+    if(timerFinished){b.textContent='🏁 Hoàn thành ⏱ '+formatTime(timerSeconds);b.className='start-btn stopped';return;}
+    if(timerTimedOut){b.textContent='⏰ Hết giờ ⏱ '+formatTime(timerSeconds);b.className='start-btn timeout';return;}
+    if(!timerStarted){b.textContent='▶ Bắt đầu ⏱ 00:00';b.className='start-btn';return;}
+    b.textContent=timerRunning?'⏸ '+formatTime(timerSeconds):'▶ Tiếp tục ⏱ '+formatTime(timerSeconds);
+    b.className='start-btn'+(timerRunning?' running':'');
+}
+function timerTick(){ timerSeconds++; if(timerSeconds>=TIMER_LIMIT_SEC){timerSeconds=TIMER_LIMIT_SEC;timerTimedOut=true;stopTimer();document.getElementById('timeoutBanner').style.display='block';} updateStartBtn(); }
+function startTimer(){ if(timerTimedOut||timerFinished||timerRunning){return;} timerRunning=true;timerStarted=true;timerInterval=setInterval(timerTick,1000);updateStartBtn(); }
+function stopTimer(){ if(!timerRunning){return;} timerRunning=false;clearInterval(timerInterval);timerInterval=null;updateStartBtn(); }
+function finishTimer(){ stopTimer();timerFinished=true;updateStartBtn(); }
+function handleStartBtn(){ if(timerFinished||timerTimedOut){return;} if(!timerStarted||!timerRunning){startTimer();}else{stopTimer();} }
+function resetTimer(){ stopTimer();timerSeconds=0;timerRunning=false;timerStarted=false;timerTimedOut=false;timerFinished=false;document.getElementById('timeoutBanner').style.display='none';updateStartBtn(); }
+
+/* ============================================================
+   VERSION / PROJECT / QUESTION
+============================================================ */
+function handleVersionChange(ver){
+    if(versionLocked){
+        alert('⚠️ Bạn đã chọn phiên bản rồi!\nKhông thể thay đổi trong phiên làm bài này.');
+        document.getElementById('versionSelect').value=document.getElementById('versionSelect').dataset.locked;
+        return;
+    }
+    versionLocked=true;
+    currentVersion=ver;
+    document.getElementById('versionSelect').dataset.locked=ver;
+    document.getElementById('versionSelect').classList.add('select-locked');
+    PROJECTS=VERSION_MAP[ver]||DATA_2016;
+    currentProject=0;currentQuestion=0;totalProjectScore=0;totalProjectMax=0;
+    resetTimer();
+}
+
+function handleProjectChange(val){
+    const idx=parseInt(val);
+    if(completedProjects.has(idx)){
+        alert('🔒 Project '+(idx+1)+' đã hoàn thành!\nVui lòng chọn project khác.');
+        document.getElementById('projectSelect').value=currentProjectIndex>=0?currentProjectIndex:'';
+        return;
+    }
+    if(projectLocked&&currentProjectIndex===idx){return;}
+    projectLocked=true;
+    currentProjectIndex=idx;
+    document.getElementById('questionSelect').classList.remove('hidden-select');
+    changeProject(idx);
+}
+
+function handleQuestionChange(val){
+    const idx=parseInt(val);
+    if(idx>highestUnlocked){
+        alert('⚠️ Bạn phải hoàn thành Câu '+(highestUnlocked+1)+' trước!\nCâu hỏi phải theo thứ tự từ 1 đến '+PROJECTS[currentProject].length+'.');
+        document.getElementById('questionSelect').value=currentQuestion;
+        return;
+    }
+    loadQuestion(idx);
+}
+
+function changeProject(index){
+    currentProject=parseInt(index);currentQuestion=0;highestUnlocked=0;
+    totalProjectScore=0;totalProjectMax=0;resetTimer();
+    const questions=PROJECTS[currentProject]||[];
+    const qSelect=document.getElementById('questionSelect');
+    if(questions.length===0){
+        qSelect.innerHTML='<option>— Chưa có câu hỏi —</option>';
+        document.getElementById('questionTitle').textContent='⚠️ Project này chưa có câu hỏi.';
+        document.getElementById('stepTitle').textContent='';
+        document.getElementById('simulator0').innerHTML='';
+        document.getElementById('result').innerHTML='';
+        document.getElementById('stepPopup').style.display='none';
+        resetResultPanel();return;
+    }
+    renderDropdown();qSelect.value=0;loadQuestion(0);
+}
+
+function renderDropdown(){
+    const select=document.getElementById('questionSelect');
+    const questions=PROJECTS[currentProject]||[];
+    let html='';
+    questions.forEach(function(q,i){
+        const locked=(i>highestUnlocked);
+        const prefix=locked?'🔒 ':(i<highestUnlocked?'✅ ':'');
+        html+='<option value="'+i+'"'+(locked?' disabled':'')+'>'+prefix+q.title+'</option>';
+    });
+    select.innerHTML=html;
+    select.value=currentQuestion;
+}
+
+function loadQuestion(index){
+    currentQuestion=parseInt(index);currentStep=0;
+    step1Completed=false;step1WrongCount=0;wrongCount=[];
+    const q=PROJECTS[currentProject][currentQuestion];
+    if(!q){document.getElementById('questionTitle').textContent='⚠️ Câu hỏi không tồn tại.';return;}
+    document.getElementById('result').innerHTML='';
+    document.getElementById('stepPopup').style.display='none';
+    document.getElementById('simulator0').innerHTML='';
+    document.getElementById('step1Select').selectedIndex=0;
+    resetResultPanel();renderQuestion();
+}
+
+/* ============================================================
+   HIỂN THỊ
+============================================================ */
+function resetResultPanel(){
+    document.getElementById('resultPlaceholder').style.display='flex';
+    document.getElementById('resultImgBox').style.display='none';
+    document.getElementById('finalPlaceholder').style.display='flex';
+    document.getElementById('finalImgBox').style.display='none';
+}
+function showResultImage(step){
+    document.getElementById('resultPlaceholder').style.display='none';
+    document.getElementById('resultImgBox').style.display='block';
+    document.getElementById('resultImg').src=step.imgResult||'';
+    document.getElementById('resultImgBadge').textContent='✔ '+step.text;
+}
+function showFinalImage(step){
+    document.getElementById('finalPlaceholder').style.display='none';
+    document.getElementById('finalImgBox').style.display='block';
+    document.getElementById('finalImg').src=step.imgFinal||step.imgResult||'';
+}
+function showStepPopup(msg,ok,img){
+    const p=document.getElementById('stepPopup');
+    p.style.display='block';p.style.background=ok?'#ecfdf5':'#fef2f2';
+    p.style.border=ok?'2px solid #16a34a':'2px solid #dc2626';
+    p.style.color=ok?'#065f46':'#991b1b';
+    let html='<span>'+msg+'</span>';
+    if(!ok&&img){html+=' <button class="hint-btn" onclick="showHint(\''+img+'\')">💡 Hướng dẫn</button>';}
+    p.innerHTML=html;
+}
+function showHint(src){
+    if(document.getElementById('hintOverlay')){return;}
+    const o=document.createElement('div');o.className='hint-overlay';o.id='hintOverlay';
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    o.innerHTML='<div class="hint-box"><div class="hint-close" onclick="closeHint()">✖</div><div class="hint-box-title">💡 Hướng dẫn — '+(step?step.text:'')+'</div><img src="'+src+'"></div>';
+    document.body.appendChild(o);
+    o.addEventListener('click',function(e){if(e.target===o){closeHint();}});
+}
+function closeHint(){const o=document.getElementById('hintOverlay');if(o){o.remove();}}
+
+/* ============================================================
+   BƯỚC 1 + RENDER + CLICK
+============================================================ */
+function checkStep1(){
+    if(debugMode){return;}
+    const q=PROJECTS[currentProject][currentQuestion];
+    if(document.getElementById('step1Select').selectedIndex===q.correctStep1){
+        step1Completed=true;showStepPopup('✔ ĐÚNG BƯỚC 1',true);
+        if(q.imgResult1){showResultImage({text:'Bước 1 đúng',imgResult:q.imgResult1});}
+    } else {
+        step1Completed=false;step1WrongCount++;
+        showStepPopup('❌ Sai bước 1 | Sai '+step1WrongCount+' lần',false);
+    }
+}
+function renderQuestion(){
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step=q.steps[currentStep];
+    document.getElementById('questionTitle').innerHTML=q.title;
+    document.getElementById('stepTitle').textContent=step.text;
+    const sim=document.getElementById('simulator0');
+    sim.innerHTML='<img src="'+step.img+'" style="width:'+step.width+'">'
+        +'<div class="click-layer" id="clickLayer"></div>'
+        +'<div id="hotspot" class="hotspot'+(debugMode?' debug':'')+'" style="left:'+step.hotspot.x+'px;top:'+step.hotspot.y+'px;width:'+step.hotspot.w+'px;height:'+step.hotspot.h+'px;"></div>';
+    sim.querySelector('#hotspot').addEventListener('click',function(e){e.stopPropagation();checkCorrect();});
+    sim.querySelector('#clickLayer').addEventListener('click',checkWrong);
+    updateCoordinateBox();
+    if(debugMode){
+        const hs=sim.querySelector('#hotspot');
+        let dr=false,sx=0,sy=0;
+        hs.addEventListener('mousedown',function(e){dr=true;sx=e.clientX;sy=e.clientY;e.preventDefault();});
+        document.addEventListener('mousemove',function(e){if(!dr){return;}step.hotspot.x+=e.clientX-sx;step.hotspot.y+=e.clientY-sy;hs.style.left=step.hotspot.x+'px';hs.style.top=step.hotspot.y+'px';sx=e.clientX;sy=e.clientY;updateCoordinateBox();});
+        document.addEventListener('mouseup',function(){dr=false;});
+    }
+}
+function checkCorrect(){
+    if(debugMode){return;}
+    if(!step1Completed){showStepPopup('❌ Hãy hoàn thành đúng Bước 1 trước',false);return;}
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step=q.steps[currentStep];
+    const isLast=(currentStep>=q.steps.length-1);
+    showStepPopup('✔ ĐÚNG: '+step.text,true);showResultImage(step);
+    if(isLast){showFinalImage(step);}
+    setTimeout(nextStep,700);
+}
+function checkWrong(){
+    if(debugMode){return;}
+    if(!step1Completed){showStepPopup('❌ Hãy hoàn thành đúng Bước 1 trước',false);return;}
+    if(!wrongCount[currentStep]){wrongCount[currentStep]=0;}wrongCount[currentStep]++;
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    showStepPopup('❌ SAI: '+step.text+' | Sai '+wrongCount[currentStep]+' lần',false,step.imgResult||null);
+}
+function nextStep(){
+    const q=PROJECTS[currentProject][currentQuestion];
+    if(currentStep>=q.steps.length-1){finishQuestion();return;}
+    currentStep++;renderQuestion();
+}
+
+/* ============================================================
+   FINISH QUESTION + LƯU ĐIỂM
+============================================================ */
+function finishQuestion(){
+    document.getElementById('stepTitle').textContent='🎉 Đã hoàn thành câu hỏi';
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step1Correct=(step1WrongCount===0)?1:0;
+    let stepsCorrect=0;
+    for(let i=0;i<q.steps.length;i++){if((wrongCount[i]||0)===0){stepsCorrect++;}}
+    const totalCorrect=step1Correct+stepsCorrect;
+    const maxScore=(q.steps.length+1)*5;
+    const questionScore=totalCorrect*5;
+    const percent=Math.round((questionScore/maxScore)*100);
+    totalProjectScore+=questionScore;totalProjectMax+=maxScore;
+
+    /* ── LƯU ĐIỂM MỖI CÂU ── */
+    saveScore(buildScorePayload(q, questionScore, maxScore, percent));
+
+    const questions=PROJECTS[currentProject];
+    const isLastQ=(currentQuestion>=questions.length-1);
+    if(currentQuestion>=highestUnlocked&&!isLastQ){ highestUnlocked=currentQuestion+1; renderDropdown(); }
+    if(isLastQ){ finishTimer(); completedProjects.add(currentProjectIndex); markProjectDone(currentProjectIndex); }
+
+    const overlay=document.getElementById('result');
+    const box=document.createElement('div'); box.className='result-box';
+    const cb=document.createElement('div'); cb.className='close-btn'; cb.textContent='✖'; cb.onclick=closeResult; box.appendChild(cb);
+    const h3=document.createElement('h3'); h3.textContent='📊 /- Skill Assessment -/'; box.appendChild(h3);
+    const sd=document.createElement('div');
+    sd.style.cssText='margin-top:12px;padding:14px;border-radius:8px;background:#dbeafe;font-size:22px;font-weight:bold;line-height:1.8;';
+    sd.innerHTML='🏆 Điểm: '+questionScore+'/'+maxScore+' ~ '+percent+'%   |   Tổng project: '+totalProjectScore+'/'+totalProjectMax+(isLastQ?'<br>⏱ Thời gian: '+formatTime(timerSeconds):'');
+    box.appendChild(sd);
+    const s1b=document.createElement('div'); s1b.style.cssText='margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:18px;';
+    const s1l=document.createElement('b'); s1l.textContent='Bước 1. Chọn đối tượng cần thực hiện';
+    const s1i=document.createElement('span'); s1i.style.color=step1Correct?'#16a34a':'#dc2626';
+    s1i.textContent='  —  Sai: '+step1WrongCount+' lần'+(step1Correct?'  ✔ +5đ':'  ✖ +0đ');
+    s1b.appendChild(s1l); s1b.appendChild(s1i); box.appendChild(s1b);
+    for(let i=0;i<q.steps.length;i++){
+        const sai=wrongCount[i]||0,ok=(sai===0);
+        const bl=document.createElement('div'); bl.style.cssText='margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:18px;';
+        const lb=document.createElement('b'); lb.textContent=q.steps[i].text;
+        const inf=document.createElement('span'); inf.style.color=ok?'#16a34a':'#dc2626';
+        inf.textContent='  —  Sai: '+sai+' lần'+(ok?'  ✔ +5đ':'  ✖ +0đ');
+        bl.appendChild(lb); bl.appendChild(inf); box.appendChild(bl);
+    }
+    const bw=document.createElement('div'); bw.style.cssText='display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;';
+    const endBtn=document.createElement('button');
+    endBtn.textContent='🏁 Finish'; endBtn.style.cssText='background:#dc2626;padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;color:#fff;';
+    endBtn.onclick=function(){closeResult();if(isLastQ){showProjectSummary();}};
+    const nextBtn=document.createElement('button');
+    nextBtn.textContent='Next ➡'; nextBtn.style.cssText='background:#2563eb;padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;color:#fff;';
+    nextBtn.onclick=function(){
+        if(currentQuestion<questions.length-1){closeResult();currentQuestion++;document.getElementById('questionSelect').value=currentQuestion;loadQuestion(currentQuestion);}
+        else{closeResult();showProjectSummary();}
+    };
+    if(isLastQ){nextBtn.style.display='none';}
+    bw.appendChild(endBtn); bw.appendChild(nextBtn); box.appendChild(bw);
+    overlay.innerHTML=''; overlay.appendChild(box);
+}
+
+function markProjectDone(idx){
+    const sel=document.getElementById('projectSelect');
+    const opt=sel.options[idx+1];
+    if(opt&&!opt.text.includes('✅')){opt.text=opt.text+' ✅';opt.style.color='#16a34a';}
+}
+function showProjectSummary(){
+    const done=completedProjects.size, allDone=(done>=7);
+    const overlay=document.getElementById('result');
+    const box=document.createElement('div'); box.className='project-summary-box';
+    const cb=document.createElement('div'); cb.className='close-btn'; cb.textContent='✖';
+    if(allDone){cb.style.display='block';cb.onclick=function(){window.close();};}
+    else{cb.style.display='none';}
+    box.appendChild(cb);
+    const h2=document.createElement('h2');
+    h2.style.cssText='font-size:24px;color:#92400e;margin-bottom:16px;';
+    h2.textContent=allDone?'🎓 Chúc mừng! Bạn đã hoàn thành tất cả 7 Project!':'🏆 Tổng kết Project '+(currentProjectIndex+1);
+    box.appendChild(h2);
+    const sd=document.createElement('div');
+    sd.style.cssText='padding:16px;background:#fef9c3;border-radius:10px;font-size:20px;font-weight:bold;margin-bottom:20px;';
+    sd.innerHTML='📊 Điểm project: <b>'+totalProjectScore+' / '+totalProjectMax+'</b>&nbsp;|&nbsp;⏱ <b>'+formatTime(timerSeconds)+'</b><br><span style="font-size:15px;font-weight:normal;color:#78716c;">Đã hoàn thành: '+done+'/7 project</span>';
+    box.appendChild(sd);
+    const bw=document.createElement('div'); bw.style.cssText='display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:8px;';
+    const hb=document.createElement('button');
+    hb.textContent='⬅ Home'; hb.style.cssText='background:#dc2626;padding:14px 28px;font-size:17px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;color:#fff;';
+    hb.onclick=goHome; bw.appendChild(hb);
+    if(!allDone){
+        const cb2=document.createElement('button');
+        cb2.textContent='📚 Tiếp tục Project'; cb2.style.cssText='background:#16a34a;padding:14px 28px;font-size:17px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;color:#fff;';
+        cb2.onclick=function(){
+            projectLocked=false;currentProjectIndex=-1;closeResult();
+            document.getElementById('questionSelect').classList.add('hidden-select');
+            document.getElementById('questionTitle').innerHTML='📌 Hãy chọn <b>-Dự án-</b> tiếp theo. Project làm xong sẽ bị khóa.';
+            document.getElementById('stepTitle').textContent='';
+            document.getElementById('simulator0').innerHTML='';resetResultPanel();
+        };
+        bw.appendChild(cb2);
+    }
+    box.appendChild(bw); overlay.innerHTML=''; overlay.appendChild(box);
+    if(allDone){window.onbeforeunload=null;}
+}
+function closeResult(){document.getElementById('result').innerHTML='';}
+
+/* ============================================================
+   DEBUG / TOOLS / HOME
+============================================================ */
+function toggleDebug(){debugMode=!debugMode;renderQuestion();}
+function updateCoordinateBox(){
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    const b=document.getElementById('coordBox');
+    if(debugMode){b.style.display='block';b.innerHTML='x: '+step.hotspot.x+'<br>y: '+step.hotspot.y+'<br>width: '+step.hotspot.w+'<br>height: '+step.hotspot.h;}
+    else{b.style.display='none';}
+}
+function openVideo(){const q=PROJECTS[currentProject][currentQuestion];window.open(q.video,'_blank');}
+function goHome(){
+    if(window.opener&&!window.opener.closed){window.close();}
+    else{window.location.href='index.html';}
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+totalProjectScore=0;totalProjectMax=0;
+document.getElementById('questionTitle').innerHTML='⚠️ Hãy chọn <I>-Phiên bản</I> & <I>Dự án-</I> luyện thi.';
+document.getElementById('stepTitle').innerHTML='';
+document.getElementById('simulator0').innerHTML='';
+</script>
+</body>
+</html>

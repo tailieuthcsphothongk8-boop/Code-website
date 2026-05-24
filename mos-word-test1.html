@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOS WORD - TEST 1</title>
+<style>
+body{ font-family:Arial; background: #eef4f9; padding:10px; box-sizing:border-box; }
+
+.top-header,
+.question-title,
+.timeout-banner,
+.step1-box,
+.col-header-bar,
+.simulator-wrapper,
+.coord-box,
+.step-popup {
+    width:100%;
+    max-width:1200px;
+    margin-left:auto;
+    margin-right:auto;
+    box-sizing:border-box;
+}
+
+.top-header{ margin-top:10px; display:flex; align-items:center; gap:12px; }
+.home-btn{ background:red; color:#fff; border:none; padding:12px 18px; border-radius:10px; cursor:pointer; font-weight:bold; white-space:nowrap; }
+.home-btn:hover{ background:#b91c1c; }
+.dropdown-wrap{ flex:1; }
+.multi-dropdown{ display:flex; gap:12px; }
+#projectSelect{ width:120px; flex:none; }
+#questionSelect{ flex:1; }
+.question-select{ width:100%; padding:12px; border-radius:10px; border:2px solid #cbd5e1; font-size:16px; font-weight:bold; background:#fff; }
+.select-locked{ background:#f1f5f9!important; color:#94a3b8!important; border-color:#e2e8f0!important; cursor:not-allowed!important; }
+#questionSelect.hidden-select{ visibility:hidden; pointer-events:none; opacity:0; }
+button{ padding:12px 8px; border:none; border-radius:10px; cursor:pointer; color:#fff; font-weight:bold; white-space:nowrap; }
+.start-btn{ background:#2563eb; min-width:160px; font-size:15px; transition:background 0.2s; }
+.start-btn:hover{ background:#1d4ed8; }
+.start-btn.running{ background:#16a34a; animation:pulse-green 1.5s infinite; }
+.start-btn.stopped{ background:#dc2626; }
+.start-btn.timeout{ background:#2563eb; animation:none; }
+@keyframes pulse-green{ 0%{background:#16a34a;} 50%{background:#15803d;box-shadow:0 0 8px rgba(22,163,74,0.5);} 100%{background:#16a34a;} }
+.btn-video{ background:#2563eb; padding:12px 8px; }
+.btn-debug{ background:red; padding:12px 8px; }
+.btn-guide{ background:#2563eb; padding:12px 8px; }
+.btn-guide:hover{ background:#d97706; }
+
+/* ── TIÊU ĐỀ CÂU HỎI ── */
+.question-title{
+    width:100%; max-width:1200px;
+    margin-left:auto; margin-right:auto;
+    text-align:left; font-size:20px; font-weight:bold; color:#1e3a5f;
+    margin-bottom:10px; box-sizing:border-box;
+}
+.btn-guide{
+    background:#2563eb; color:#fff; border:none;
+    padding:12px 8px; border-radius:10px; cursor:pointer;
+    font-size:12px; font-weight:bold; white-space:nowrap;
+    flex-shrink:0;
+}
+.btn-guide:hover{ background:#d97706; }
+
+/* ── HỘP THOẠI HƯỚNG DẪN ── */
+.guide-overlay{
+    position:fixed; left:0; top:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.55); z-index:29999;
+    display:none; justify-content:center; align-items:center;
+}
+.guide-overlay.show{ display:flex; }
+.guide-box{
+    background:#fff; border:3px solid #f59e0b;
+    border-radius:16px; padding:28px 30px 24px;
+    max-width:720px; width:94%; max-height:88vh; overflow-y:auto;
+    box-shadow:0 16px 50px rgba(0,0,0,0.35); position:relative;
+}
+.guide-close{
+    position:absolute; right:12px; top:10px;
+    font-size:24px; cursor:pointer; color:#374151; line-height:1;
+}
+.guide-close:hover{ color:#dc2626; }
+.guide-title{
+    font-size:20px; font-weight:bold; color:#92400e;
+    text-align:center; margin-bottom:6px;
+}
+.guide-subtitle{
+    font-size:16px; color:#dc2626; font-weight:bold;
+    text-align:center; margin-bottom:18px;
+    background:#fef3c7; padding:6px 12px; border-radius:8px;
+    border:1px solid #fde68a;
+}
+.guide-box h3{
+    font-size:16px; font-weight:bold; color:#1e3a5f;
+    margin:14px 0 6px; padding:6px 10px;
+    background:#eff6ff; border-left:4px solid #2563eb; border-radius:4px;
+}
+.guide-box p{ margin:4px 0 4px 10px; font-size:16px; color:#374151; line-height:1.7; }
+.guide-box ul{ margin:4px 0 4px 24px; padding:0; }
+.guide-box ul li{ font-size:16px; color:#374151; line-height:1.8; }
+.guide-box .note{
+    font-size:16px; color:#64748b; margin:4px 0 4px 10px;
+    padding-left:14px; border-left:3px solid #cbd5e1;
+}
+.guide-box .highlight{ color:#16a34a; font-weight:bold; }
+.guide-box .warn{ color:#dc2626; font-weight:bold; }
+.guide-btn-close{
+    display:block; margin:20px auto 0;
+    background:#2563eb; color:#fff; border:none;
+    padding:10px 32px; border-radius:10px;
+    font-size:16px; font-weight:bold; cursor:pointer;
+}
+.guide-btn-close:hover{ background:#1d4ed8; }
+
+.col-header-bar{ margin-bottom:6px; display:grid; grid-template-columns:65% 35%; gap:16px; }
+.step-title{ font-size:18px; color:#1e3a5f; font-weight:bold; padding:8px 12px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:8px; display:flex; align-items:center; margin:0; }
+.right-col-header{ font-size:16px; font-weight:bold; color:#64748b; padding:8px 12px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:8px; display:flex; align-items:center; justify-content:center; text-transform:uppercase; letter-spacing:0.5px; }
+.step1-box{ margin-bottom:10px; background:#ecfdf5; border:2px solid #dbeafe; border-radius:12px; padding:8px; display:flex; align-items:center; gap:16px; }
+.step1-title{ font-size:18px; font-weight:bold; color:#1e3a5f; white-space:nowrap; }
+.step1-select{ flex:1; padding:8px; border-radius:10px; border:2px solid #cbd5e1; font-size:18px; font-weight:normal; background:#fff; }
+.simulator-wrapper{ display:grid; grid-template-columns:65% 35%; gap:16px; align-items:stretch; }
+.simulator{ position:relative; border:2px solid #ccc; border-radius:10px; overflow:hidden; background:#fff; min-height:320px; }
+.simulator img{ max-width:100%; max-height:420px; height:auto; display:block; }
+.hotspot{ position:absolute; cursor:pointer; box-sizing:border-box; z-index:10; }
+.hotspot.debug{ border:2px dashed red; background:rgba(255,0,0,0.15); }
+.click-layer{ position:absolute; left:0; top:0; width:100%; height:100%; z-index:1; }
+.coord-box{ margin:12px auto; background:#111827; color:#fff; padding:12px; border-radius:8px; font-size:14px; display:none; line-height:1.7; }
+.step-popup{ margin:10px auto; text-align:center; padding:8px 18px; border-radius:10px; font-weight:bold; font-size:18px; display:none; transition:all 0.2s ease; }
+.hint-btn{ display:inline-block; margin-left:16px; padding:6px 16px; background:#f59e0b; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; vertical-align:middle; transition:background 0.2s; }
+.hint-btn:hover{ background:#d97706; }
+.hint-overlay{ position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:19999; display:flex; justify-content:center; align-items:center; }
+.hint-box{ background:#fff; border:3px solid #f59e0b; border-radius:14px; padding:20px 24px 18px; max-width:700px; width:90%; box-shadow:0 12px 40px rgba(0,0,0,0.35); position:relative; text-align:center; }
+.hint-box-title{ font-size:17px; font-weight:bold; color:#92400e; margin-bottom:12px; }
+.hint-box img{ max-width:100%; border-radius:8px; border:1px solid #fde68a; }
+.hint-close{ position:absolute; right:10px; top:8px; font-size:22px; cursor:pointer; color:#374151; }
+.hint-close:hover{ color:#dc2626; }
+.timeout-banner{ margin-bottom:10px; background:#fef2f2; border:2px solid #dc2626; border-radius:10px; padding:14px 18px; font-size:18px; font-weight:bold; color:#991b1b; text-align:center; display:none; }
+.result{ position:fixed; left:0; top:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.35); z-index:9999; pointer-events:none; }
+.result:empty{ display:none; }
+.result-box{ background:#ecfdf5; border:2px solid #16a34a; border-radius:12px; padding:24px 30px; min-width:min(500px,90vw); box-shadow:0 10px 30px rgba(0,0,0,0.25); pointer-events:auto; position:relative; max-height:80vh; overflow:auto; }
+.close-btn{ position:absolute; right:10px; top:8px; cursor:pointer; font-size:22px; color:#111; }
+.project-summary-box{ background:#fff3cd; border:3px solid #f59e0b; border-radius:14px; padding:28px 32px; min-width:min(560px,90vw); box-shadow:0 16px 50px rgba(0,0,0,0.35); pointer-events:auto; position:relative; max-height:85vh; overflow:auto; text-align:center; }
+.project-summary-box .close-btn{ display:none; }
+.project-summary-box.final-summary .close-btn{ display:none!important; }
+#resultPanel{ display:flex; flex-direction:column; gap:10px; }
+.result-step-box{ flex:1; min-height:0; }
+.result-final-box{ flex:1; min-height:0; }
+.result-placeholder{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:140px; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; color:#94a3b8; font-size:13px; font-weight:bold; gap:8px; text-align:center; padding:14px; }
+.result-placeholder span{ font-size:28px; }
+.result-img-box{ border:2px solid #16a34a; border-radius:10px; overflow:hidden; background:#fff; }
+.result-step-box .result-img-box img{ width:100%; max-height:200px; height:auto; display:block; }
+.result-final-box .result-img-box img{ width:100%; max-height:200px; height:auto; display:block; }
+.result-img-badge{ color:#fff; font-size:12px; font-weight:bold; padding:5px 12px; text-align:center; }
+.result-img-badge.badge-step{ background:#2563eb; }
+.result-img-badge.badge-final{ background:#2563eb; }
+#questionSelect option.locked-question{ color:#94a3b8; }
+
+@media (max-width:1023px){
+    .step1-select{ font-size:15px; padding:10px; }
+    .step-title, .right-col-header{ font-size:15px; }
+    .question-title{ font-size:17px; }
+}
+@media (max-width:767px){
+    body{ padding:10px; }
+    .step1-box{ flex-wrap:wrap; gap:10px; }
+    .start-btn{ min-width:120px; font-size:13px; }
+    .step1-select{ font-size:14px; padding:8px; }
+    .col-header-bar{ grid-template-columns:1fr; gap:6px; }
+    .right-col-header{ display:none; }
+    .simulator-wrapper{ grid-template-columns:1fr; gap:12px; }
+    #resultPanel{ flex-direction:row; gap:10px; }
+    .result-step-box, .result-final-box{ flex:1; }
+    .result-step-box .result-img-box img,
+    .result-final-box .result-img-box img{ max-height:140px; }
+    .step-popup{ font-size:15px; padding:10px 14px; }
+    .question-title{ font-size:16px; }
+    .top-header{ flex-wrap:wrap; gap:8px; }
+}
+@media (max-width:479px){
+    .step1-box{ padding:10px; }
+    .step1-title{ font-size:16px; }
+    .start-btn{ min-width:100px; font-size:12px; padding:8px 10px; }
+    .question-title{ font-size:15px; }
+    .step-title{ font-size:14px; }
+    .simulator{ min-height:200px; }
+    #resultPanel{ flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- HỘP THOẠI HƯỚNG DẪN SỬ DỤNG -->
+<div class="guide-overlay" id="guideOverlay" onclick="closeGuide(event)">
+  <div class="guide-box">
+    <span class="guide-close" onclick="closeGuideBtn()">&#10006;</span>
+    <div class="guide-title">&#128218; HƯỚNG DẪN SỬ DỤNG GIAO DIỆN MOS</div>
+    <div class="guide-subtitle">&#9888; Chú ý: xem nhanh các mục <span style="color:#dc2626;">1a</span> và <span style="color:#dc2626;">2b</span></div>
+
+    <h3>1. Di chuyển xuống cuối trang, thực hiện:</h3>
+
+    <p><strong class="highlight">a) Bắt buộc lựa chọn &ldquo;Phiên bản&rdquo; và &ldquo;Dự án&rdquo;</strong></p>
+    <ul>
+      <li>Chọn <strong>&ldquo;Phiên bản&rdquo;</strong> luyện thi chỉ <u>1 lần duy nhất</u>.</li>
+      <li>Chọn <strong>&ldquo;Project&rdquo;</strong> <U>không nhất thiết</U> theo thứ tự từ 1 đến N.</li>
+      <li>Sau khi chọn Phiên bản và Dự án sẽ hiển thị <strong>&ldquo;Danh sách câu hỏi&rdquo;</strong>.</li>
+    </ul>
+    <p class="note">&#8594; Danh sách câu hỏi <strong class="warn">bắt buộc</strong> thực hiện theo thứ tự từ 1 &#8594; 2 &#8594; 3&hellip;</p>
+
+    <p style="margin-top:10px;"><strong class="highlight">b) Giải thích các nút cuối trang:</strong></p>
+    <ul>
+      <li>Nút <strong>&ldquo;Home&rdquo;</strong> &mdash; thoát khỏi trang luyện thi, trở về trang chủ.</li>
+      <li>Nút <strong>&ldquo;Clip bài tập&rdquo;</strong> &mdash; xem Video hướng dẫn bài tập đang luyện thi.</li>
+      <li>Nút <strong>&ldquo;Khóa chức năng&rdquo;</strong> &mdash; khi nháy chọn sẽ bị khóa chức năng làm bài tập.</li>
+    </ul>
+
+    <h3>2. Sau khi thực hiện mục 1a, giao diện bài tập gồm có:</h3>
+    <p class="note">Trước khi luyện thi có thể bật/tắt <strong>&ldquo;Bắt đầu&rdquo;</strong> tính thời gian làm bài &rarr; sẽ kết thúc ở mỗi dự án.</p>
+
+    <p><strong class="highlight">a)</strong> Trên cùng là <strong>câu hỏi thực hành</strong>.</p>
+
+    <p><strong class="highlight">b) Các bước làm bài tập:</strong></p>
+    <ul>
+      <li>Dòng <strong>&ldquo;Bước 1&rdquo;</strong> &mdash; lựa chọn thực hiện bước đầu tiên theo các gợi ý.</li>
+      <li>Dòng <strong>&ldquo;Bước 2, 3&hellip;&rdquo;</strong> &mdash; thực hiện theo gợi ý văn bản và <em>Click chuột đúng vị trí</em> cần chọn.</li>
+    </ul>
+    <p class="note">&#8594; Bên phải là <strong>minh họa các bước</strong> đã chọn và kết quả câu hỏi.</p>
+    <p class="note">&#8594; Đối với mỗi lựa chọn đều có thông báo đúng hoặc sai:</p>
+    <ul>
+      <li><span class="highlight">&#10004; Trường hợp &ldquo;Đúng&rdquo;</span> &mdash; chọn bước tiếp theo.</li>
+      <li><span class="warn">&#10008; Trường hợp &ldquo;Sai&rdquo;</span> &mdash; hiển thị thông báo có hướng dẫn, bạn nháy chọn xem <strong>&ldquo;Hướng dẫn&rdquo;</strong> và thực hiện tiếp tục.</li>
+    </ul>
+
+    <p><strong class="highlight">c)</strong> Kết thúc mỗi câu hỏi sẽ có <strong>&ldquo;Đánh giá kỹ năng các bước&rdquo;</strong> + <strong>&ldquo;Chấm điểm&rdquo;</strong> + <strong>&ldquo;Thời gian&rdquo;</strong>.</p>
+    <ul>
+      <li>Nút <strong>&ldquo;Finish&rdquo;</strong> &mdash; để kết thúc câu hỏi, chuyển sang Project tổng kết.</li>
+      <li>Nút <strong>&ldquo;Next&rdquo;</strong> &mdash; <u>bắt buộc</u> tiếp tục câu hỏi liền kề.</li>
+    </ul>
+
+    <p><strong class="highlight">d)</strong> Kết thúc mỗi Project có nút <strong>&ldquo;Home&rdquo;</strong> kết thúc dự án, và nút <strong>&ldquo;Tiếp tục Project&rdquo;</strong> cho phép chọn Project tiếp theo &mdash; <em><u>không nhất thiết</u> phải liền kề</em>.</p>
+
+    <p><strong class="highlight">e)</strong> Khi kết thúc tất cả Project &rarr; <strong>Kết thúc bài test</strong>, trở về <strong>&ldquo;Home&rdquo;</strong> để chọn bài test tiếp theo.</p>
+
+    <button class="guide-btn-close" onclick="closeGuideBtn()">&#10003; Đã hiểu &mdash; Bắt đầu làm bài</button>
+  </div>
+</div>
+
+<div class="timeout-banner" id="timeoutBanner">
+    &#9200; Đã hết 60 phút &mdash; Đồng hồ tạm dừng. Bạn vẫn có thể tiếp tục làm bài.
+</div>
+
+<!-- DÒNG TIÊU ĐỀ -->
+<div class="question-title" id="questionTitle"></div>
+
+<div class="step1-box">
+    <button class="start-btn" id="startBtn" onclick="handleStartBtn()">&#9654; Bắt đầu &#9201; 00:00</button>
+    <div class="step1-title">Bước 1.</div>
+    <select class="step1-select" id="step1Select" onchange="checkStep1()">
+        <option>- - Hãy chọn các gợi ý khác - -</option>
+        <option>1. Nháy chọn văn bản (đoạn/ trang văn bản) cần thực hiện.</option>
+        <option>2. Nháy chọn bảng/ hình ảnh cần định dạng.</option>
+        <option>3. Nháy chọn vị trí cần tạo Header (Footer/ Endnote/ Footnote).</option>
+        <option>4. Nháy chọn vị trí cần chèn hình ảnh/ tạo bảng.</option>
+        <option>5. Click phải chuột lên đối tượng cần thực hiện.</option>
+    </select>
+</div>
+
+<div class="col-header-bar">
+    <div class="step-title" id="stepTitle"></div>
+    <div class="right-col-header" id="rightColHeader">* Minh họa kết quả *</div>
+</div>
+
+<div class="simulator-wrapper">
+    <div class="simulator" id="simulator0"></div>
+    <div id="resultPanel">
+        <div class="result-step-box">
+            <div class="result-placeholder" id="resultPlaceholder">
+                <span>&#128433;&#65039;</span>
+                Click đúng bên trái<br>để xem minh họa
+            </div>
+            <div class="result-img-box" id="resultImgBox" style="display:none;">
+                <div class="result-img-badge badge-step" id="resultImgBadge"></div>
+                <img id="resultImg" src="" alt="Minh họa bước đúng">
+            </div>
+        </div>
+        <div class="result-final-box">
+            <div class="result-placeholder" id="finalPlaceholder">
+                <span>&#127937;</span>
+                Xuất hiện khi hoàn thành<br>bước cuối cùng
+            </div>
+            <div class="result-img-box" id="finalImgBox" style="display:none;">
+                <div class="result-img-badge badge-final" id="finalImgBadge">&#127937; Kết quả hoàn thành câu hỏi</div>
+                <img id="finalImg" src="" alt="Kết quả câu hỏi">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="step-popup" id="stepPopup"></div>
+<div class="coord-box" id="coordBox"></div>
+<div class="result" id="result"></div>
+
+<div class="top-header">
+    <button class="home-btn" onclick="goHome()">&#8592; Home</button>
+    <select class="question-select" id="versionSelect" onchange="handleVersionChange(this.value)" style="width:120px;flex:none;">
+        <option value="" selected disabled>- Phiên bản -</option>
+        <option value="2016">Word 2016</option>
+        <option value="2019">Word 2019</option>
+        <option value="2021">Word 2021</option>
+        <option value="365">Word 365</option>
+    </select>
+    <div class="dropdown-wrap multi-dropdown">
+        <select class="question-select" id="projectSelect" onchange="handleProjectChange(this.value)">
+            <option value="" selected disabled>- Dự án -</option>
+            <option value="0">Project 1</option>
+            <option value="1">Project 2</option>
+            <option value="2">Project 3</option>
+            <option value="3">Project 4</option>
+            <option value="4">Project 5</option>
+            <option value="5">Project 6</option>
+            <option value="6">Project 7</option>
+        </select>
+        <select class="question-select hidden-select" id="questionSelect" onchange="handleQuestionChange(this.value)"></select>
+    </div>
+    <button class="btn-video" onclick="openVideo()">&#127916; Clip bài tập</button>
+    <button class="btn-guide" onclick="openGuide()" id="guideBtn">&#128218; Hướng dẫn SD</button>
+    <button class="btn-debug" onclick="toggleDebug()">&#128683; Khóa chức năng</button>
+</div>
+
+<script>
+/* ===================== DỮ LIỆU ===================== */
+const DATA_2016 = [
+/* ===== PROJECT 1 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link',
+      steps:[
+        { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} },
+        { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} },
+        { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} },
+        { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} }
+      ]},
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link',
+      steps:[
+        { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} },
+        { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} },
+        { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} },
+        { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} }
+      ]},
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link',
+      steps:[
+        { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} },
+        { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} },
+        { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} },
+        { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} }
+      ]},
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link',
+      steps:[
+        { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} },
+        { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} },
+        { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} },
+        { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} }
+      ]},
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link',
+      steps:[
+        { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} },
+        { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} },
+        { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} },
+        { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} }
+      ]},
+],
+/* ===== PROJECT 2 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+],
+/* ===== PROJECT 3 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+],
+/* ===== PROJECT 4 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+],
+/* ===== PROJECT 5 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+],
+/* ===== PROJECT 6 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+],
+/* ===== PROJECT 7 ===== */
+[
+    { title:'Câu 1. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 2. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 3. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 4. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+    { title:'Câu 5. <u>Trước đoạn 2</u>, hãy <u>chèn Table</u> với số dòng là 2, số cột là 5.', correctStep1:4, imgResult1:'images/test1-p1-c1-da-buoc1.png', video:'video-link', steps:[ { text:'Bước 2. Nháy chọn thẻ ...', img:'images/test1-p1-c1-th-buoc2+.png', imgResult:'images/test1-p1-c1-da-buoc2.png', width:'100%', hotspot:{x:112,y:22,w:45,h:30} }, { text:'Bước 3. Nháy chọn lệnh /nhóm lệnh ...', img:'images/test1-p1-c1-th-buoc3++.png', imgResult:'images/test1-p1-c1-da-buoc3.png', width:'100%', hotspot:{x:37,y:49,w:42,h:35} }, { text:'Bước 4. Nháy chọn lệnh /chức năng ...', img:'images/test1-p1-c1-th-buoc4.png', imgResult:'images/test1-p1-c1-da-buoc4.png', width:'100%', hotspot:{x:141,y:297,w:130,h:32} }, { text:'Bước 5. Thiết lập - chọn xác nhận thiết lập', img:'images/test1-p1-c1-th-buoc5.png', imgResult:'images/test1-p1-c1-da-buoc5.png', imgFinal:'images/test1-p1-c1-da-buockq.png', width:'100%', hotspot:{x:275,y:396,w:97,h:25} } ] },
+]
+];
+
+const DELTA_2019 = [ [null,null,null,null,null], [], [], [], [], [], [] ];
+const DELTA_2021 = [ [], [], [], [], [], [], [] ];
+const DELTA_365  = [ [], [], [], [], [], [], [] ];
+
+function buildProjects(delta){
+    return DATA_2016.map(function(proj2016,pi){
+        const d=delta[pi]||[];
+        if(d.length===0){ return proj2016; }
+        const result=[];
+        for(let qi=0;qi<d.length;qi++){
+            if(d[qi]===null){ if(proj2016[qi]){ result.push(proj2016[qi]); } }
+            else { result.push(d[qi]); }
+        }
+        return result;
+    });
+}
+
+const VERSION_MAP = {
+    '2016': DATA_2016,
+    '2019': buildProjects(DELTA_2019),
+    '2021': buildProjects(DELTA_2021),
+    '365' : buildProjects(DELTA_365)
+};
+
+let PROJECTS = [];
+
+/* =========================================
+   HƯỚNG DẪN SỬ DỤNG
+========================================= */
+function openGuide(){
+    document.getElementById('guideOverlay').classList.add('show');
+}
+function closeGuideBtn(){
+    document.getElementById('guideOverlay').classList.remove('show');
+}
+function closeGuide(e){
+    if(e.target === document.getElementById('guideOverlay')){ closeGuideBtn(); }
+}
+
+/* =========================================
+   KHÓA PHIÊN BẢN & DỰ ÁN
+========================================= */
+let versionLocked       = false;
+let projectLocked       = false;
+let completedProjects   = new Set();
+let currentProjectIndex = -1;
+let highestUnlocked     = 0;
+
+function handleVersionChange(ver){
+    if(versionLocked){
+        alert('⚠️ Bạn đã chọn phiên bản rồi!\nKhông thể thay đổi phiên bản trong phiên làm bài này.');
+        document.getElementById('versionSelect').value = document.getElementById('versionSelect').dataset.locked;
+        return;
+    }
+    versionLocked = true;
+    document.getElementById('versionSelect').dataset.locked = ver;
+    document.getElementById('versionSelect').classList.add('select-locked');
+    PROJECTS = VERSION_MAP[ver] || DATA_2016;
+    currentProject = 0; currentQuestion = 0;
+    totalProjectScore = 0; totalProjectMax = 0;
+    resetTimer();
+}
+
+function handleProjectChange(val){
+    const idx = parseInt(val);
+    if(completedProjects.has(idx)){
+        alert('🔒 Project ' + (idx+1) + ' đã hoàn thành!\nVui lòng chọn project khác.');
+        document.getElementById('projectSelect').value = currentProjectIndex >= 0 ? currentProjectIndex : '';
+        return;
+    }
+    if(projectLocked && currentProjectIndex === idx){ return; }
+    projectLocked = true;
+    currentProjectIndex = idx;
+    document.getElementById('questionSelect').classList.remove('hidden-select');
+    changeProject(idx);
+}
+
+function handleQuestionChange(val){
+    const idx = parseInt(val);
+    if(idx > highestUnlocked){
+        alert('⚠️ Bạn phải hoàn thành Câu ' + (highestUnlocked+1) + ' trước!\nCâu hỏi phải làm theo thứ tự từ 1 đến ' + PROJECTS[currentProject].length + '.');
+        document.getElementById('questionSelect').value = currentQuestion;
+        return;
+    }
+    loadQuestion(idx);
+}
+
+/* =========================================
+STATE
+========================================= */
+let currentProject  = 0;
+let currentQuestion = 0;
+let currentStep     = 0;
+let debugMode       = false;
+let wrongCount      = [];
+let step1WrongCount = 0;
+let step1Completed  = false;
+let totalProjectScore = 0;
+let totalProjectMax   = 0;
+
+/* =========================================
+TIMER
+========================================= */
+const TIMER_LIMIT_SEC = 60*60;
+let timerSeconds=0, timerInterval=null, timerRunning=false;
+let timerStarted=false, timerTimedOut=false, timerFinished=false;
+
+function formatTime(sec){ const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60; if(h>0){return pad(h)+':'+pad(m)+':'+pad(s);} return pad(m)+':'+pad(s); }
+function pad(n){ return n<10?'0'+n:''+n; }
+function updateStartBtn(){
+    const btn=document.getElementById('startBtn');
+    if(timerFinished){ btn.textContent='🏁 Hoàn thành ⏱ '+formatTime(timerSeconds); btn.className='start-btn stopped'; return; }
+    if(timerTimedOut){ btn.textContent='⏰ Hết giờ ⏱ '+formatTime(timerSeconds); btn.className='start-btn timeout'; return; }
+    if(!timerStarted){ btn.textContent='▶ Bắt đầu ⏱ 00:00'; btn.className='start-btn'; return; }
+    if(timerRunning){ btn.textContent='⏸ '+formatTime(timerSeconds); btn.className='start-btn running'; }
+    else { btn.textContent='▶ Tiếp tục ⏱ '+formatTime(timerSeconds); btn.className='start-btn'; }
+}
+function timerTick(){ timerSeconds++; if(timerSeconds>=TIMER_LIMIT_SEC){ timerSeconds=TIMER_LIMIT_SEC; timerTimedOut=true; stopTimer(); document.getElementById('timeoutBanner').style.display='block'; } updateStartBtn(); }
+function startTimer(){ if(timerTimedOut||timerFinished||timerRunning){return;} timerRunning=true; timerStarted=true; timerInterval=setInterval(timerTick,1000); updateStartBtn(); }
+function stopTimer(){ if(!timerRunning){return;} timerRunning=false; clearInterval(timerInterval); timerInterval=null; updateStartBtn(); }
+function finishTimer(){ stopTimer(); timerFinished=true; updateStartBtn(); }
+function handleStartBtn(){ if(timerFinished||timerTimedOut){return;} if(!timerStarted||!timerRunning){startTimer();}else{stopTimer();} }
+function resetTimer(){ stopTimer(); timerSeconds=0; timerRunning=false; timerStarted=false; timerTimedOut=false; timerFinished=false; document.getElementById('timeoutBanner').style.display='none'; updateStartBtn(); }
+
+/* =========================================
+VERSION / PROJECT / QUESTION
+========================================= */
+function changeProject(index){
+    currentProject=parseInt(index); currentQuestion=0;
+    highestUnlocked=0;
+    totalProjectScore=0; totalProjectMax=0;
+    resetTimer();
+    const questions=PROJECTS[currentProject]||[];
+    const qSelect=document.getElementById('questionSelect');
+    if(questions.length===0){
+        qSelect.innerHTML='<option>— Chưa có câu hỏi —</option>';
+        document.getElementById('questionTitle').textContent='⚠️ Project này chưa có câu hỏi.';
+        document.getElementById('stepTitle').textContent='';
+        document.getElementById('simulator0').innerHTML='';
+        document.getElementById('result').innerHTML='';
+        document.getElementById('stepPopup').style.display='none';
+        resetResultPanel(); return;
+    }
+    renderDropdown(); qSelect.value=0; loadQuestion(0);
+}
+
+function renderDropdown(){
+    const select=document.getElementById('questionSelect');
+    const questions=PROJECTS[currentProject]||[];
+    let html='';
+    questions.forEach(function(q,index){
+        const locked=(index>highestUnlocked);
+        const prefix=locked?'🔒 ':(index<highestUnlocked?'✅ ':'');
+        html+='<option value="'+index+'"'+(locked?' class="locked-question" disabled':'')+'>'+prefix+q.title+'</option>';
+    });
+    select.innerHTML=html;
+    select.value=currentQuestion;
+}
+
+function loadQuestion(index){
+    currentQuestion=parseInt(index); currentStep=0;
+    step1Completed=false; step1WrongCount=0; wrongCount=[];
+    const q=PROJECTS[currentProject][currentQuestion];
+    if(!q){ document.getElementById('questionTitle').textContent='⚠️ Câu hỏi không tồn tại.'; return; }
+    document.getElementById('result').innerHTML='';
+    document.getElementById('stepPopup').style.display='none';
+    document.getElementById('simulator0').innerHTML='';
+    document.getElementById('step1Select').selectedIndex=0;
+    resetResultPanel(); renderQuestion();
+}
+
+/* =========================================
+RESET / HIỂN THỊ CỘT PHẢI
+========================================= */
+function resetResultPanel(){
+    document.getElementById('resultPlaceholder').style.display='flex';
+    document.getElementById('resultImgBox').style.display='none';
+    document.getElementById('finalPlaceholder').style.display='flex';
+    document.getElementById('finalImgBox').style.display='none';
+}
+function showResultImage(step){
+    document.getElementById('resultPlaceholder').style.display='none';
+    document.getElementById('resultImgBox').style.display='block';
+    document.getElementById('resultImg').src=step.imgResult||'';
+    document.getElementById('resultImgBadge').textContent='✔ '+step.text;
+}
+function showFinalImage(step){
+    document.getElementById('finalPlaceholder').style.display='none';
+    document.getElementById('finalImgBox').style.display='block';
+    document.getElementById('finalImg').src=step.imgFinal||step.imgResult||'';
+    document.getElementById('finalImgBadge').textContent='🏁 Kết quả hoàn thành câu hỏi';
+}
+
+/* =========================================
+POPUP + HINT
+========================================= */
+function showStepPopup(message,isCorrect,imgResult){
+    const popup=document.getElementById('stepPopup');
+    popup.style.display='block';
+    popup.style.background=isCorrect?'#ecfdf5':'#fef2f2';
+    popup.style.border=isCorrect?'2px solid #16a34a':'2px solid #dc2626';
+    popup.style.color=isCorrect?'#065f46':'#991b1b';
+    let html='<span>'+message+'</span>';
+    if(!isCorrect&&imgResult){ html+=' <button class="hint-btn" onclick="showHint(\''+ imgResult+'\'  )">💡 Hướng dẫn</button>'; }
+    popup.innerHTML=html;
+}
+function showHint(imgSrc){
+    if(document.getElementById('hintOverlay')){return;}
+    const overlay=document.createElement('div');
+    overlay.className='hint-overlay'; overlay.id='hintOverlay';
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    const stepTxt=step?step.text:'Đáp án đúng';
+    overlay.innerHTML='<div class="hint-box"><div class="hint-close" onclick="closeHint()">✖</div><div class="hint-box-title">💡 Hướng dẫn — '+stepTxt+'</div><img src="'+imgSrc+'" alt="Hướng dẫn đúng"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click',function(e){if(e.target===overlay){closeHint();}});
+}
+function closeHint(){ const o=document.getElementById('hintOverlay'); if(o){o.remove();} }
+
+/* =========================================
+CHECK STEP 1
+========================================= */
+function checkStep1(){
+    if(debugMode){return;}
+    const q=PROJECTS[currentProject][currentQuestion];
+    const selectedIndex=document.getElementById('step1Select').selectedIndex;
+    if(selectedIndex===q.correctStep1){
+        step1Completed=true; showStepPopup('✔ ĐÚNG BƯỚC 1',true);
+        if(q.imgResult1){showResultImage({text:'Bước 1 đúng',imgResult:q.imgResult1});}
+    } else {
+        step1Completed=false; step1WrongCount++;
+        showStepPopup('❌ Sai bước 1 | Sai '+step1WrongCount+' lần',false);
+    }
+}
+
+/* =========================================
+RENDER QUESTION
+========================================= */
+function renderQuestion(){
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step=q.steps[currentStep];
+    document.getElementById('questionTitle').innerHTML=q.title;
+    document.getElementById('stepTitle').textContent=step.text;
+    const simulator=document.getElementById('simulator0');
+    simulator.innerHTML='<img src="'+step.img+'" style="width:'+step.width+'">'+'<div class="click-layer" id="clickLayer"></div>'+'<div id="hotspot" class="hotspot'+(debugMode?' debug':'')+'" style="left:'+step.hotspot.x+'px;top:'+step.hotspot.y+'px;width:'+step.hotspot.w+'px;height:'+step.hotspot.h+'px;"></div>';
+    const hotspot=simulator.querySelector('#hotspot');
+    const clickLayer=simulator.querySelector('#clickLayer');
+    hotspot.addEventListener('click',function(e){e.stopPropagation();checkCorrect();});
+    clickLayer.addEventListener('click',function(){checkWrong();});
+    updateCoordinateBox();
+    if(debugMode){
+        let isDragging=false,startX=0,startY=0;
+        hotspot.addEventListener('mousedown',function(e){isDragging=true;startX=e.clientX;startY=e.clientY;e.preventDefault();});
+        document.addEventListener('mousemove',function(e){ if(!isDragging){return;} step.hotspot.x+=e.clientX-startX; step.hotspot.y+=e.clientY-startY; hotspot.style.left=step.hotspot.x+'px'; hotspot.style.top=step.hotspot.y+'px'; startX=e.clientX; startY=e.clientY; updateCoordinateBox(); });
+        document.addEventListener('mouseup',function(){isDragging=false;});
+    }
+}
+
+/* =========================================
+CORRECT / WRONG / NEXT
+========================================= */
+function checkCorrect(){
+    if(debugMode){return;}
+    if(!step1Completed){showStepPopup('❌ Hãy hoàn thành đúng Bước 1 trước',false);return;}
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step=q.steps[currentStep];
+    const isLastStep=(currentStep>=q.steps.length-1);
+    showStepPopup('✔ ĐÚNG: '+step.text,true); showResultImage(step);
+    if(isLastStep){showFinalImage(step);}
+    setTimeout(function(){nextStep();},700);
+}
+function checkWrong(){
+    if(debugMode){return;}
+    if(!step1Completed){showStepPopup('❌ Hãy hoàn thành đúng Bước 1 trước',false);return;}
+    if(!wrongCount[currentStep]){wrongCount[currentStep]=0;}
+    wrongCount[currentStep]++;
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    showStepPopup('❌ SAI: '+step.text+' | Sai '+wrongCount[currentStep]+' lần',false,step.imgResult||null);
+}
+function nextStep(){
+    const q=PROJECTS[currentProject][currentQuestion];
+    if(currentStep>=q.steps.length-1){finishQuestion();return;}
+    currentStep++; renderQuestion();
+}
+
+/* =========================================
+FINISH QUESTION
+========================================= */
+function finishQuestion(){
+    document.getElementById('stepTitle').textContent='🎉 Đã hoàn thành câu hỏi';
+    const q=PROJECTS[currentProject][currentQuestion];
+    const step1Correct=(step1WrongCount===0)?1:0;
+    let stepsCorrect=0;
+    for(let i=0;i<q.steps.length;i++){if((wrongCount[i]||0)===0){stepsCorrect++;}}
+    const totalCorrect=step1Correct+stepsCorrect;
+    const maxScore=(q.steps.length+1)*5;
+    const questionScore=totalCorrect*5;
+    const percent=Math.round((questionScore/maxScore)*100);
+    totalProjectScore+=questionScore; totalProjectMax+=maxScore;
+    const questions=PROJECTS[currentProject];
+    const isLastQuestion=(currentQuestion>=questions.length-1);
+    if(currentQuestion>=highestUnlocked&&!isLastQuestion){ highestUnlocked=currentQuestion+1; renderDropdown(); }
+    if(isLastQuestion){ finishTimer(); completedProjects.add(currentProjectIndex); markProjectDone(currentProjectIndex); }
+    const overlay=document.getElementById('result');
+    const box=document.createElement('div'); box.className='result-box';
+    const closeBtn=document.createElement('div'); closeBtn.className='close-btn'; closeBtn.textContent='✖'; closeBtn.onclick=closeResult; box.appendChild(closeBtn);
+    const h3=document.createElement('h3'); h3.textContent='📊 /- Skill Assessment -/'; box.appendChild(h3);
+    const scoreDiv=document.createElement('div');
+    scoreDiv.style.cssText='margin-top:12px;padding:14px;border-radius:8px;background:#dbeafe;font-size:22px;font-weight:bold;line-height:1.8;';
+    scoreDiv.innerHTML='🏆 Điểm: '+questionScore+'/'+maxScore+' ~ '+percent+'%   |   Tổng project: '+totalProjectScore+'/'+totalProjectMax+(isLastQuestion?'<br>⏱ Thời gian: '+formatTime(timerSeconds):'');
+    box.appendChild(scoreDiv);
+    const s1Block=document.createElement('div'); s1Block.style.cssText='margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:18px;';
+    const s1Label=document.createElement('b'); s1Label.textContent='Bước 1. Chọn đối tượng cần thực hiện';
+    const s1Info=document.createElement('span'); s1Info.style.color=step1Correct?'#16a34a':'#dc2626';
+    s1Info.textContent='  —  Sai: '+step1WrongCount+' lần'+(step1Correct?'  ✔ +5đ':'  ✖ +0đ');
+    s1Block.appendChild(s1Label); s1Block.appendChild(s1Info); box.appendChild(s1Block);
+    for(let i=0;i<q.steps.length;i++){
+        const sai=wrongCount[i]||0; const correct=(sai===0);
+        const block=document.createElement('div'); block.style.cssText='margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:18px;';
+        const label=document.createElement('b'); label.textContent=q.steps[i].text;
+        const info=document.createElement('span'); info.style.color=correct?'#16a34a':'#dc2626';
+        info.textContent='  —  Sai: '+sai+' lần'+(correct?'  ✔ +5đ':'  ✖ +0đ');
+        block.appendChild(label); block.appendChild(info); box.appendChild(block);
+    }
+    const btnWrap=document.createElement('div'); btnWrap.style.cssText='display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;';
+    const endBtn=document.createElement('button'); endBtn.textContent='🏁 Finish';
+    endBtn.style.cssText='background:#dc2626;padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;color:#fff;';
+    endBtn.onclick=function(){ closeResult(); if(isLastQuestion){ showProjectSummary(); } };
+    const nextBtn=document.createElement('button'); nextBtn.textContent='Next ➡';
+    nextBtn.style.cssText='background:#2563eb;padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer;color:#fff;';
+    nextBtn.onclick=function(){
+        if(currentQuestion<questions.length-1){ closeResult(); currentQuestion++; document.getElementById('questionSelect').value=currentQuestion; loadQuestion(currentQuestion); }
+        else { closeResult(); showProjectSummary(); }
+    };
+    if(isLastQuestion){ nextBtn.style.display='none'; }
+    btnWrap.appendChild(endBtn); btnWrap.appendChild(nextBtn); box.appendChild(btnWrap);
+    overlay.innerHTML=''; overlay.appendChild(box);
+}
+
+/* =========================================
+ĐÁNH DẤU PROJECT + TỔNG KẾT
+========================================= */
+function markProjectDone(idx){
+    const sel=document.getElementById('projectSelect');
+    const opt=sel.options[idx+1];
+    if(opt&&!opt.text.includes('✅')){ opt.text=opt.text+' ✅'; opt.style.color='#16a34a'; }
+}
+function showProjectSummary(){
+    const totalDone=completedProjects.size; const isAllDone=(totalDone>=7);
+    const overlay=document.getElementById('result');
+    const box=document.createElement('div'); box.className=isAllDone?'project-summary-box final-summary':'project-summary-box';
+    const closeBtn=document.createElement('div'); closeBtn.className='close-btn'; closeBtn.textContent='✖';
+    if(isAllDone){ closeBtn.style.display='block'; closeBtn.onclick=function(){window.close();}; }
+    else { closeBtn.style.display='none'; }
+    box.appendChild(closeBtn);
+    const h2=document.createElement('h2'); h2.style.cssText='font-size:24px;color:#92400e;margin-bottom:16px;';
+    h2.textContent=isAllDone?'🎓 Chúc mừng! Bạn đã hoàn thành tất cả 7 Project!':'🏆 Tổng kết Project '+(currentProjectIndex+1);
+    box.appendChild(h2);
+    const scoreDiv=document.createElement('div'); scoreDiv.style.cssText='padding:16px;background:#fef9c3;border-radius:10px;font-size:20px;font-weight:bold;margin-bottom:20px;';
+    scoreDiv.innerHTML='📊 Điểm project: <b>'+totalProjectScore+' / '+totalProjectMax+'</b>&nbsp;|&nbsp;⏱ <b>'+formatTime(timerSeconds)+'</b><br><span style="font-size:15px;font-weight:normal;color:#78716c;">Đã hoàn thành: '+totalDone+'/7 project</span>';
+    box.appendChild(scoreDiv);
+    const btnWrap=document.createElement('div'); btnWrap.style.cssText='display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:8px;';
+    const homeBtn=document.createElement('button'); homeBtn.textContent='⬅ Home';
+    homeBtn.style.cssText='background:#dc2626;padding:14px 28px;font-size:17px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;color:#fff;';
+    homeBtn.onclick=function(){goHome();}; btnWrap.appendChild(homeBtn);
+    if(!isAllDone){
+        const continueBtn=document.createElement('button'); continueBtn.textContent='📚 Tiếp tục Project';
+        continueBtn.style.cssText='background:#16a34a;padding:14px 28px;font-size:17px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;color:#fff;';
+        continueBtn.onclick=function(){
+            projectLocked=false; currentProjectIndex=-1; closeResult();
+            document.getElementById('questionSelect').classList.add('hidden-select');
+            document.getElementById('questionTitle').innerHTML='📌 Hãy chọn <b>-Project-</b> tiếp theo, hoặc chọn nút -Home- để kết thúc bài test. Project làm xong sẽ bị khóa.';
+            document.getElementById('stepTitle').textContent='';
+            document.getElementById('simulator0').innerHTML=''; resetResultPanel();
+        };
+        btnWrap.appendChild(continueBtn);
+    }
+    box.appendChild(btnWrap); overlay.innerHTML=''; overlay.appendChild(box);
+    if(isAllDone){ window.onbeforeunload=null; }
+}
+function closeResult(){ document.getElementById('result').innerHTML=''; }
+
+/* =========================================
+DEBUG / COORDINATE / VIDEO / HOME
+========================================= */
+function toggleDebug(){ debugMode=!debugMode; renderQuestion(); }
+function updateCoordinateBox(){
+    const step=PROJECTS[currentProject][currentQuestion].steps[currentStep];
+    const box=document.getElementById('coordBox');
+    if(debugMode){ box.style.display='block'; box.innerHTML='x: '+step.hotspot.x+'<br>y: '+step.hotspot.y+'<br>width: '+step.hotspot.w+'<br>height: '+step.hotspot.h; }
+    else { box.style.display='none'; }
+}
+function openVideo(){ const q=PROJECTS[currentProject][currentQuestion]; window.open(q.video,'_blank'); }
+function goHome(){
+    if(window.opener&&!window.opener.closed){ window.close(); }
+    else { window.location.href='index.html'; }
+}
+
+/* =========================================
+INIT
+========================================= */
+totalProjectScore=0; totalProjectMax=0;
+document.getElementById('questionTitle').innerHTML='⚠️ Hãy chọn <I>*Phiên bản</I> &amp; <I>Dự án*</I> luyện thi. Hoặc xem <I>*Hướng dẫn sử dụng*<I>';
+document.getElementById('stepTitle').innerHTML='';
+document.getElementById('simulator0').innerHTML='';
+</script>
+</body>
+</html>
